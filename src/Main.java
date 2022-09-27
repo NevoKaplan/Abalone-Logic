@@ -5,6 +5,7 @@ public class Main {
     private static Scanner in = new Scanner(System.in);
 
     public static void main(String[] args) {
+
         System.out.println("---------------------------");
         Board board = Board.getInstance();
         boolean play = true;
@@ -42,4 +43,5 @@ public class Main {
                 System.out.println("Invalid answer, try again.\n");
         }
     }
+
 }

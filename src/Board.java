@@ -147,7 +147,7 @@ public class Board {
 
     // stones layout - test
     private void test() {
-        int[][] placeAcc = {{0,0,0,0,0,4,4,4,4}, {-1,-1,1,1,1,0,4,4,4}, {0,1,0,0,1,0,0,4,4}, {0,1,0,0,0,1,0,0,4}, {0,1,0,0,0,0,1,0,0}, {4,0,0,0,0,0,0,0,0}, {4,4,0,0,0,0,0,0,0}, {4,4,4,0,0,0,0,0,0}, {4,4,4,4,0,0,0,0,0},};
+        int[][] placeAcc = {{0,0,0,0,0,4,4,4,4}, {1,-1,1,1,1,0,4,4,4}, {0,1,0,0,1,0,0,4,4}, {0,1,0,0,0,1,0,0,4}, {0,1,0,0,0,0,1,0,0}, {4,0,0,0,0,0,0,0,0}, {4,4,0,0,0,0,0,0,0}, {4,4,4,0,0,0,0,0,0}, {4,4,4,4,0,0,0,0,0},};
         for (int i = 0; i < placeAcc.length; i++) {for (int j = 0; j < placeAcc[i].length; j++) {hex[i][j].setMainNum(placeAcc[i][j]);}}
     }
 
@@ -513,6 +513,8 @@ public class Board {
                 if (hex[temp.row + var[0]][temp.col + var[1]].getMainNum() == player) {
                     arrayList.add(hex[temp.row + var[0]][temp.col + var[1]]);
                 }
+                else
+                    continue;
                 if (hex[temp.row + 2 * var[0]][temp.col + 2 * var[1]].getMainNum() == player) {
                     arrayList.add(hex[temp.row + 2 * var[0]][temp.col + 2 * var[1]]);
                 }
@@ -533,9 +535,15 @@ public class Board {
             stone.changeSelected();
             return true;
         }
-        if (Stone.size == 2)
-            return choosePiece2(stone, highlights);
         else if (Stone.size >= 3) {return false;}
+
+        if (!highlights.contains(stone))
+            return false;
+
+        if (Stone.size == 2) {
+            stone.changeSelected();
+            return true;
+        }
 
         Stone temp = Stone.selected.get(0);  // there is only one stone in the array...
         for (int[] var: dirArr) { // all directions
@@ -548,15 +556,6 @@ public class Board {
                 hex[temp.row + var[0]][temp.col + var[1]].changeSelected();
                 return true;
             } // checks for "legality" of the stone and adds them to the list if legal
-        }
-        return false;
-    }
-
-    // third piece to be chosen, will choose if in targets
-    private boolean choosePiece2(Stone stone, ArrayList<Stone> highlighted) {
-        if (highlighted.contains(stone)) {
-            stone.changeSelected();
-            return true;
         }
         return false;
     }
