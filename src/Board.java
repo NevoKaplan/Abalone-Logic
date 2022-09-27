@@ -5,6 +5,7 @@ import java.util.Scanner;
 public class Board {
 
     private static Board single_instance = null;
+
     private int player;
     public Stone[][] hex;
     final private static Scanner in = new Scanner(System.in);
@@ -147,7 +148,7 @@ public class Board {
 
     // stones layout - test
     private void test() {
-        int[][] placeAcc = {{0,0,0,0,0,4,4,4,4}, {1,-1,1,1,1,0,4,4,4}, {0,1,0,0,1,0,0,4,4}, {0,1,0,0,0,1,0,0,4}, {0,1,0,0,0,0,1,0,0}, {4,0,0,0,0,0,0,0,0}, {4,4,0,0,0,0,0,0,0}, {4,4,4,0,0,0,0,0,0}, {4,4,4,4,0,0,0,0,0},};
+        int[][] placeAcc = {{0,0,0,0,0,4,4,4,4}, {-1,-1,1,1,1,0,4,4,4}, {0,1,0,0,1,0,0,4,4}, {0,1,0,0,0,1,0,0,4}, {0,1,0,0,0,0,1,0,0}, {4,0,0,0,0,0,0,0,0}, {4,4,0,0,0,0,0,0,0}, {4,4,4,0,0,0,0,0,0}, {4,4,4,4,0,0,0,0,0},};
         for (int i = 0; i < placeAcc.length; i++) {for (int j = 0; j < placeAcc[i].length; j++) {hex[i][j].setMainNum(placeAcc[i][j]);}}
     }
 
@@ -155,7 +156,6 @@ public class Board {
     public void print() {
         StringBuilder space = new StringBuilder("          ");
         for (int i = 0; i < hex.length; i++) {
-            space.append("".repeat(hex.length - i));
             for (int j = 0; j < hex[i].length; j++) {
                 if (hex[i][j].getMainNum() != 4) {
                     if (hex[i][j].getSelected())
@@ -327,23 +327,15 @@ public class Board {
         try {
             if (hex[moveTo.row + drow][moveTo.col + dcol].getMainNum() == 4) { // if next one off grid
                 // remove current
-                if (ogNum == player * -1)
-                    removeStone(true);
-                else {
-                    System.out.println("YES IT GOT TO HERE (moveStones) 1");
-                    removeStone(false); // check if it gets to here in the future
-                }
+                // when player moves to edge
+                removeStone(ogNum == player * -1);
             }
             else { removeStone(false); }
             return true;
         }
         catch (ArrayIndexOutOfBoundsException e) { // if next one off grid
-            if (ogNum == player*-1)
-                removeStone(true);
-            else {
-                System.out.println("YES IT GOT TO HERE (moveStones) 2");
-                removeStone(false); // check if it gets to here in the future
-            }
+            // when player moves to edge
+            removeStone(ogNum == player * -1);
             return true;
         }
     }
