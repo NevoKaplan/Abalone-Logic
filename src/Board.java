@@ -259,13 +259,14 @@ public class Board {
             return false;
         }
         if (targets.contains(moveTo)) {
-            return moveStones(moveTo);
+            moveStones(moveTo);
+            return true;
         }
         return false;
     }
 
     // moves the stones
-    private boolean moveStones(Stone moveTo) {
+    private void moveStones(Stone moveTo) {
         int ogNum = moveTo.getMainNum();
         moveTo.setMainNum(0); // sets move to num to 0 after saving it
 
@@ -316,7 +317,7 @@ public class Board {
 
                 Stone.merge(Stone.selected, Stone.toBe);
                 sideMove(drow, dcol, moveTo);
-                return true;
+                return;
             }
         }
 
@@ -331,12 +332,10 @@ public class Board {
                 removeStone(ogNum == player * -1);
             }
             else { removeStone(false); }
-            return true;
         }
         catch (ArrayIndexOutOfBoundsException e) { // if next one off grid
             // when player moves to edge
             removeStone(ogNum == player * -1);
-            return true;
         }
     }
 
