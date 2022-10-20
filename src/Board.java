@@ -4,30 +4,39 @@ import java.util.Scanner;
 
 public class Board {
 
-    private static Board single_instance = null;
+    //private static Board single_instance = null;
 
-    private int player;
+    protected int player;
     public Stone[][] hex;
     final private static Scanner in = new Scanner(System.in);
     private final int[][] dirArr = {{-1, -1}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {1, 1}};
     public int deadBlue = 0, deadRed = 0;
+    public ArrayList<Stone> selected = new ArrayList<>();
+    public ArrayList<Stone> toBe = new ArrayList<>();
+    public int selectedSize = 0;
+
+    private AI ai;
+
+    // get player
+    public int getPlayer() { return this.player; }
 
     // singleton
-    public static Board getInstance() {
+    /*public static Board getInstance() {
         if (single_instance == null)
             single_instance = new Board();
 
         return single_instance;
-    }
+    }*/
 
     // resets singleton
-    public Board reset() {
+    /*public Board reset() {
         single_instance = null;
         return Board.getInstance();
-    }
+    }*/
+
 
     // creates the board
-    private Board() {
+    public Board(boolean first) {
         boolean increase = false;
         player = 1;
         int cols = 9, rows = 9;
@@ -52,17 +61,24 @@ public class Board {
             temp = increase ? temp + 1 : temp - 1;
         }
         hex = tempHex;
-        int num;
-        do {
-            System.out.print("Choose Starting Form: \n1. Normal\n2. German Daisy\n3. Snakes\n4. Crowns\nEnter Number: ");
-            num = in.nextInt();
-        } while (num < 1 || num > 5);
-        switch (num) {
-            case 2 -> organizeGermanDaisy();
-            case 3 -> organizeSnake();
-            case 4 -> organizeCrown();
-            case 5 -> test();
-            default -> organizeNormal();
+        int num, p;
+        if (first) {
+            do {
+                System.out.print("Choose Starting Form: \n1. Normal\n2. German Daisy\n3. Snakes\n4. Crowns\nEnter Number: ");
+                num = in.nextInt();
+                System.out.println("Play vs AI (1/2): ");
+                p = in.nextInt();
+            } while (num < 1 || num > 5);
+            switch (num) {
+                case 2 -> organizeGermanDaisy();
+                case 3 -> organizeSnake();
+                case 4 -> organizeCrown();
+                case 5 -> test();
+                default -> organizeNormal();
+            }
+            if (p == 1) {
+                ai = AI.getInstance(player *-1);
+            }
         }
     }
 
@@ -194,13 +210,13 @@ public class Board {
                 System.out.println("player: " + player + ", Stone: " + stone);
                 if (stone.getMainNum() == player) {
                     if (!choosePiece(stone, move2)) { // if false cleans selected and chooses the new one
-                        Stone.cleanSelected();
-                        stone.changeSelected();
+                        cleanSelected();
+                        changeSelected(stone);
                     }
 
                     // <VISUAL
                     System.out.println("To be: " + stone + "\nSelected Stones:");
-                    for (int i = 0; i < Stone.size; i++) {System.out.println(Stone.selected.get(i));}
+                    for (int i = 0; i < selectedSize; i++) {System.out.println(selected.get(i));}
                     System.out.println("----------------------");
                     // VISUAL>
 
@@ -237,25 +253,29 @@ public class Board {
                     // VISUAL>
 
                 }
-                else if ((stone.getMainNum() == player * -1 || stone.getMainNum() == 0) && !Stone.selected.isEmpty()) { // if chose wrong stone and is allowed to
+                else if ((stone.getMainNum() == player * -1 || stone.getMainNum() == 0) && !selected.isEmpty()) { // if chose wrong stone and is allowed to
                     pushedTroops = pushTroops(targets, stone);  // push the stone
                     System.out.println("trying to push");
                     if (pushedTroops)
-                        Stone.cleanSelected();
+                        cleanSelected();
                 }
             } catch (ArrayIndexOutOfBoundsException e) {System.out.println("Out of bounds"); // if chosen is out of bounds or anything unexpected happens within the loop
                 System.out.println("\nSelected Stones:");
-                for (int i = 0; i < Stone.size; i++) {System.out.println(Stone.selected.get(i));}System.out.println("----------------------");}
+                for (int i = 0; i < selectedSize; i++) {System.out.println(selected.get(i));}System.out.println("----------------------");}
         }
         this.print();
-        player *= -1;
+        if (ai == null)
+            player *= -1;
+        else {
+            ai.makeMove(this);
+        }
     }
 
     // starts the pushing functions
-    private boolean pushTroops(ArrayList<Stone> targets, Stone moveTo) {
+    protected boolean pushTroops(ArrayList<Stone> targets, Stone moveTo) {
         if (targets.isEmpty()) { // if no targets, selection was bad
             System.out.println("Cant make that selection");
-            Stone.cleanSelected();
+            cleanSelected();
             return false;
         }
         if (targets.contains(moveTo)) {
@@ -267,69 +287,46 @@ public class Board {
 
     // moves the stones
     private void moveStones(Stone moveTo) {
-        int ogNum = moveTo.getMainNum();
         moveTo.setMainNum(0); // sets move to num to 0 after saving it
 
-        boolean reverse = false;
+        boolean reverse = shouldReverse(moveTo);
 
-        Stone.sort(Stone.selected);
-        if (!moveTo.isLarger(Stone.selected.get(0))) {
-            Stone.reverseList(Stone.selected);
-            reverse = true; // if one is reversed, all are REVERSED!
+        // <VISUAL
+        /*System.out.println("HERE \t drow: " + drow + "\t, dcol: " + dcol);
+        System.out.println("\nSelected Stones:");
+        for (int i = 0; i < selectedSize; i++) {System.out.println(selected.get(i));}
+        System.out.println("----------------------");
+        System.out.println("\nTo Be:");
+        for (Stone stone : toBe) {
+            System.out.println(stone);
         }
+        System.out.println("----------------------");
+        // VISUAL>
+        */
 
-        Stone.toBe.add(moveTo);
-        Stone last = Stone.selected.get(Stone.size - 1);
 
+        if (beforeSideMove(moveTo, true))
+            return;
+
+        Stone last = selected.get(selectedSize - 1);
         int drow = moveTo.row - last.row;
         int dcol = moveTo.col - last.col;
 
-        // <VISUAL
-        System.out.println("HERE \t drow: " + drow + "\t, dcol: " + dcol);
-        System.out.println("\nSelected Stones:");
-        for (int i = 0; i < Stone.size; i++) {System.out.println(Stone.selected.get(i));}
-        System.out.println("----------------------");
-        System.out.println("\nTo Be:");
-        for (int i = 0; i < Stone.toBe.size(); i++) {System.out.println(Stone.toBe.get(i));}
-        System.out.println("----------------------");
-        // VISUAL>
+        shouldReverse2(reverse);
 
-        if (Stone.size > 1) {
-            Stone secondLast = Stone.selected.get(Stone.size - 2);
-            System.out.println("BEFOREENTER: drow: " + (last.row - secondLast.row) + ", dcol: " + (last.col - secondLast.col));
-            if (makeSureSelected(moveTo, last.row - secondLast.row, last.col - secondLast.col, last)) { // checks the line to see if moveTo is in the same line - if it is move on...
-            } else {
-                if (Math.abs(drow) <= 1 && Math.abs(dcol) > 1) { // if more than 1 selected and not same line and too far, need to reverse
-                    Stone.reverseList(Stone.selected);
-                    last = Stone.selected.get(Stone.size - 1);
-                    drow = (moveTo.row - last.row);
-                    dcol = (moveTo.col - last.col);
-                }
+        beforeLineMove(drow, dcol);
 
-                // <VISUAL
-                System.out.println("\nSelected Stones:");
-                for (int i = 0; i < Stone.size; i++) {System.out.println(Stone.selected.get(i));}
-                System.out.println("----------------------");
-                System.out.println("\nTo Be:");
-                for (int i = 0; i < Stone.toBe.size(); i++) {System.out.println(Stone.toBe.get(i));}
-                System.out.println("----------------------");
-                // VISUAL>
+    }
 
-                Stone.merge(Stone.selected, Stone.toBe);
-                sideMove(drow, dcol, moveTo);
-                return;
-            }
-        }
-
-        Stone.sort(Stone.toBe); // make sure it's sorted
-        if (reverse) { // IF ONE IS REVERSED THEY ALL ARE!
-            Stone.reverseList(Stone.toBe);}
-        Stone.merge(Stone.selected, Stone.toBe);
+    protected void beforeLineMove(int drow, int dcol) {
+        Stone moveTo = this.toBe.get(this.toBe.size() - 1);
+        int ogNum = moveTo.getOgNum();
+        this.merge();
         try {
             if (hex[moveTo.row + drow][moveTo.col + dcol].getMainNum() == 4) { // if next one off grid
                 // remove current
                 // when player moves to edge
-                removeStone(ogNum == player * -1);
+                this.removeStone(ogNum == player * -1);
             }
             else { removeStone(false); }
         }
@@ -339,14 +336,61 @@ public class Board {
         }
     }
 
+    protected boolean shouldReverse(Stone moveTo) {
+        boolean reverse = false;
+
+        Stone.sort(selected);
+        if (!moveTo.isLarger(selected.get(0))) {
+            Stone.reverseList(selected);
+            reverse = true; // if one is reversed, all are REVERSED!
+        }
+        this.toBe.add(moveTo);
+
+        return reverse;
+    }
+
+    protected void shouldReverse2(boolean reverse) {
+        Stone.sort(toBe); // make sure it's sorted
+        if (reverse) { // IF ONE IS REVERSED THEY ALL ARE!
+            Stone.reverseList(toBe);}
+    }
+
+    protected boolean beforeSideMove(Stone moveTo, boolean reallyUse) {
+        Stone last = selected.get(selectedSize - 1);
+        int drow = moveTo.row - last.row;
+        int dcol = moveTo.col - last.col;
+        if (selectedSize > 1) {
+            Stone secondLast = selected.get(selectedSize - 2);
+            if (makeSureSelected(moveTo, last.row - secondLast.row, last.col - secondLast.col, last)) { // checks the line to see if moveTo is in the same line - if it is move on...
+                return false;
+            }
+            else {
+                if ((drow >= 1 && dcol <= -1) || (drow <= -1 && dcol >= 1)) { // if more than 1 selected and not same line and too far, need to reverse
+                    Stone.reverseList(selected);
+                    last = selected.get(selectedSize - 1);
+                    drow = (moveTo.row - last.row);
+                    dcol = (moveTo.col - last.col);
+                }
+
+                if (reallyUse) {
+                    this.merge();
+                    this.sideMove(drow, dcol);
+                }
+                return true;
+            }
+        }
+        else
+            return false;
+    }
+
     // if moveTo is same line add all stones leading up to toBe
     private boolean makeSureSelected(Stone moveTo, int drow, int dcol, Stone start) {
         boolean didSomething = false;
         ArrayList<Stone> tempList = new ArrayList<>();
-        while (!hex[start.row][start.col].equals(moveTo)) {
+        while (!start.equals(moveTo)) {
             try {
                 start = hex[start.row + drow][start.col + dcol];
-                if (!Stone.toBe.contains(start)) {
+                if (!toBe.contains(start)) {
                     tempList.add(start);
                 } else {
                     didSomething = true;
@@ -355,14 +399,15 @@ public class Board {
             catch (ArrayIndexOutOfBoundsException e) { return false;}
         }
         if (didSomething)
-            Stone.toBe.addAll(tempList);
+            toBe.addAll(tempList);
         return didSomething;
     }
 
     // side move stones
-    private void sideMove(int drow, int dcol, Stone moveTo) {
-        Iterator<Stone> it = Stone.selected.iterator();
+    protected void sideMove(int drow, int dcol) {
+        Iterator<Stone> it = selected.iterator();
         System.out.println("drow: " + drow + ", dcol: " + dcol + "\nSIDE MOVEMENT");
+        Stone moveTo = this.toBe.get(0);
         while (it.hasNext()) {
             Stone temp = it.next();
             if (!temp.equals(moveTo)) {
@@ -375,10 +420,10 @@ public class Board {
 
     // actually push (not side push), might also push enemy
     private void actuallyPush() {
-            int size = Stone.size;
-            Stone t = hex[Stone.selected.get(0).row][Stone.selected.get(0).col];
+            int size = selectedSize;
+            Stone t = hex[selected.get(0).row][selected.get(0).col];
             for (int i = size - 2; i >= 0; i--) {
-                Stone.selected.get(i + 1).setMainNum(Stone.selected.get(i).getMainNum());
+                selected.get(i + 1).setMainNum(selected.get(i).getMainNum());
             }
             t.setMainNum(0);
     }
@@ -395,15 +440,16 @@ public class Board {
     }
 
     // returns a list with all available targets to go to
-    private ArrayList<Stone> availableTargets() {
-        if (Stone.selected.isEmpty())
+    protected ArrayList<Stone> availableTargets() {
+        if (selected.isEmpty())
             return null;
-        if (Stone.size >= 2) // can be 2 or 3
+
+        if (selectedSize >= 2) // can be 2 or 3
             return availableTargets2();
 
         // if code here, can only be 1 selected
         ArrayList<Stone> targets = new ArrayList<>();
-        Stone temp = Stone.selected.get(0);
+        Stone temp = selected.get(0);
         for (int[] var : dirArr) { // all directions list
             try {
                 if (hex[temp.row + var[0]][temp.col + var[1]].getMainNum() == 0) {
@@ -417,27 +463,27 @@ public class Board {
 
     // handle case of more than 1 selected
     private ArrayList<Stone> availableTargets2() {
-        Stone first = Stone.selected.get(0);
-        Stone second = Stone.selected.get(1);
+        Stone first = selected.get(0);
+        Stone second = selected.get(1);
         int drow = first.row - second.row;
         int dcol = first.col - second.col;
         ArrayList<Stone> stones = new ArrayList<>();
-        int size = Stone.size;
+        int size = selectedSize;
         // gets the difference between the 2 stones
 
         targetLine(drow, dcol, first, 0, stones, size); // from first and on
-        targetLine(-drow, -dcol, Stone.selected.get(size-1), 0, stones, size); // from last and on
+        targetLine(-drow, -dcol, selected.get(size-1), 0, stones, size); // from last and on
 
         Iterator<Stone> it;
         boolean flag, added; // flag checks if stones can be moved to the side
         for (int[] var : dirArr) { // list of all directions
-            it = Stone.selected.iterator();
+            it = selected.iterator();
             flag = true;
             added = false;
             ArrayList<Stone> maybe = new ArrayList<>();
             if ((var[0] != drow || var[1] != dcol) && (var[0] != -drow || var[1] != -dcol)) { // don't check the already checked
                 if (((first.col < first.col + var[1]) && (first.row + var[0] <= first.row)) || (drow == 0 && first.col <= first.col + var[1])) { // change only if the current one is more to the left than the next one
-                    Stone.reverseList(Stone.selected);
+                    Stone.reverseList(selected);
                 }
                 while (it.hasNext() && flag) {
                     Stone temp = it.next();
@@ -490,15 +536,15 @@ public class Board {
     }
 
     // checks for available to be chosen stones
-    private ArrayList<Stone> availableStones2 () {
-        if (Stone.size <= 0) return null;
+    protected ArrayList<Stone> availableStones2 () {
+        if (selectedSize <= 0) return null;
         ArrayList<Stone> arrayList = new ArrayList<>();
-        if (Stone.size == 2)
+        if (selectedSize == 2)
             return choosePiece2Highlight(arrayList);
-        else if (Stone.size >= 3) { return null; } // no more available
+        else if (selectedSize >= 3) { return null; } // no more available
 
         // checks for available when 1 is selected
-        Stone temp = Stone.selected.get(0);
+        Stone temp = selected.get(0);
         for (int[] var : dirArr) {
             try {
                 if (hex[temp.row + var[0]][temp.col + var[1]].getMainNum() == player) {
@@ -516,35 +562,45 @@ public class Board {
     }
 
     // checks if player
-    private boolean choosePiece(Stone stone, ArrayList<Stone> highlights) {
-        if (Stone.selected.isEmpty()) {
-            stone.changeSelected();
+    protected boolean choosePiece(Stone stone, ArrayList<Stone> highlights) {
+        if (selected.isEmpty()) {
+            changeSelected(stone);
             return true;
         }
 
-        if (Stone.selected.contains(stone)) {
-            stone.changeSelected();
+        if (selected.contains(stone)) {
+            if (selectedSize >= 3) {
+                Stone.sort(selected);
+                if (selected.get(1).equals(stone)) {
+                    Stone temp = selected.get(2);
+                    changeSelected(stone);
+                    changeSelected(temp);
+                    return true;
+                }
+            }
+            changeSelected(stone);
             return true;
         }
-        else if (Stone.size >= 3) {return false;}
+
+        else if (selectedSize >= 3) {return false;}
 
         if (!highlights.contains(stone))
             return false;
 
-        if (Stone.size == 2) {
-            stone.changeSelected();
+        if (selectedSize == 2) {
+            changeSelected(stone);
             return true;
         }
 
-        Stone temp = Stone.selected.get(0);  // there is only one stone in the array...
+        Stone temp = selected.get(0);  // there is only one stone in the array...
         for (int[] var: dirArr) { // all directions
             if (var[0] == stone.row - temp.row && var[1] == stone.col - temp.col) {
-                stone.changeSelected();
+                changeSelected(stone);
                 return true;
             }
             else if (2 * var[0] == stone.row - temp.row && 2 * var[1] == stone.col - temp.col) {
-                stone.changeSelected();
-                hex[temp.row + var[0]][temp.col + var[1]].changeSelected();
+                changeSelected(stone);
+                changeSelected(hex[temp.row + var[0]][temp.col + var[1]]);
                 return true;
             } // checks for "legality" of the stone and adds them to the list if legal
         }
@@ -553,9 +609,9 @@ public class Board {
 
     // checks possible selections when 2 are already selected
     private ArrayList<Stone> choosePiece2Highlight(ArrayList<Stone> stones) {
-        Stone.sort(Stone.selected);
-        Stone first = Stone.selected.get(0);
-        Stone second = Stone.selected.get(1);
+        Stone.sort(selected);
+        Stone first = selected.get(0);
+        Stone second = selected.get(1);
         int drow = first.row - second.row;
         int dcol = first.col - second.col;
         // checks the edges
@@ -574,4 +630,37 @@ public class Board {
         return stones;
     }
 
+    protected void cleanSelected() {
+        Iterator<Stone> it = selected.iterator();
+        //System.out.println("--\nWere Selected:");
+        while (it.hasNext()) {
+            Stone stone = it.next();
+            //System.out.println(stone);
+            stone.setSelected(false);
+        }
+        selected = new ArrayList<>();
+        selectedSize = 0;
+        toBe.clear();
+        //System.out.println("--\nSELECTED DELETED\n--");
+    }
+
+    protected void merge() {
+        selected.addAll(toBe);
+        selectedSize += toBe.size();
+        toBe.clear();
+    }
+
+    protected boolean changeSelected(Stone stone) {
+        stone.isSelected = !stone.isSelected;
+        if (stone.isSelected) {
+            selected.add(stone);
+            selectedSize++;
+        }
+        else {
+            selected.remove(stone);
+            selectedSize--;
+        }
+        Stone.sort(selected);
+        return stone.isSelected;
+    }
 }

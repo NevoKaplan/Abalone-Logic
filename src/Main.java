@@ -5,9 +5,11 @@ public class Main {
     private static final Scanner in = new Scanner(System.in);
 
     public static void main(String[] args) {
-
         System.out.println("---------------------------");
-        Board board = Board.getInstance();
+        Board board = new Board(true);
+        //AIBoard a = new AIBoard(board);
+       // a.getNextBoards();
+        //System.out.println("THE COUNTER: " + AIBoard.run);
         boolean play = true;
         while (play) {
             board.print();
@@ -17,13 +19,13 @@ public class Main {
                 System.out.println("Red Won!");
                 play = again();
                 if (play)
-                    board = board.reset();
+                    board = new Board(true);
             }
             else if (board.deadRed >= 6) {
                 System.out.println("Blue Won!");
                 play = again();
                 if (play)
-                    board = board.reset();
+                    board = new Board(true);
             }
         }
     }

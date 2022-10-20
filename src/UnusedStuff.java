@@ -3,7 +3,7 @@ import java.util.Iterator;
 import java.util.Scanner;
 
 public class UnusedStuff {
-
+/*
     final int maxTroops = 14, cols = 9, rows = 9;
     public Stone[][] hex;
     private static Scanner in = new Scanner(System.in);
@@ -380,5 +380,5 @@ public class UnusedStuff {
             System.out.println();
         }
         return hex;
-    }
+    }*/
 }

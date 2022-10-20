@@ -6,21 +6,24 @@ public class Stone {
 
     private int mainNum;
     public int row, col;
-    private boolean isSelected;
-    public static ArrayList<Stone> selected = new ArrayList<>();
-    public static ArrayList<Stone> toBe = new ArrayList<>();
-    public static int size = 0;
+    public boolean isSelected;
+    private int ogNum;
 
     public Stone(int mainNum, int row, int col) {
         this.mainNum = mainNum;
         this.row = row;
         this.col = col;
-        isSelected = false;
+        this.isSelected = false;
+        this.ogNum = mainNum;
     }
 
     public int getMainNum() {return this.mainNum;}
 
     public void setMainNum(int num) {this.mainNum = num;}
+
+    public int getOgNum() {return this.ogNum;}
+
+    public void setOgNum(int num) {this.ogNum = num;}
 
     public String toString() {
         return this.mainNum + " [" + this.row + "]" + "[" + this.col + "]";
@@ -29,20 +32,6 @@ public class Stone {
     public boolean getSelected() {return this.isSelected;}
 
     public void setSelected(boolean bool) {this.isSelected = bool;}
-
-    public boolean changeSelected() {
-        this.isSelected = !this.isSelected;
-        if (isSelected) {
-            selected.add(this);
-            size++;
-        }
-        else {
-            selected.remove(this);
-            size--;
-        }
-        sort(selected);
-        return this.isSelected;
-    }
 
     public boolean isLarger(Stone stone) { // returns true if parameter is larger than instance
         if (this.row < stone.row)
@@ -82,23 +71,4 @@ public class Stone {
         Collections.reverse(stones);
     }
 
-    public static void cleanSelected() {
-        Iterator<Stone> it = selected.iterator();
-        System.out.println("--\nWere Selected:");
-        while (it.hasNext()) {
-            Stone stone = it.next();
-            System.out.println(stone);
-            stone.setSelected(false);
-        }
-        selected = new ArrayList<>();
-        size = 0;
-        toBe.clear();
-        System.out.println("--\nSELECTED DELETED\n--");
-    }
-
-    public static void merge(ArrayList<Stone> selected, ArrayList<Stone> toBe) {
-        selected.addAll(toBe);
-        size += toBe.size();
-        toBe.clear();
-    }
 }
